@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>FaaS仪表盘</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f7fa;
+margin:40px;
+}
+
+h1{
+color:#333;
+}
+
+.container{
+display:grid;
+grid-template-columns:1fr 1fr;
+grid-gap:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+textarea{
+width:100%;
+height:200px;
+font-family:monospace;
+font-size:14px;
+}
+
+button{
+padding:10px 20px;
+margin-top:10px;
+background:#007bff;
+color:white;
+border:none;
+cursor:pointer;
+border-radius:4px;
+}
+
+button:hover{
+background:#0056b3;
+}
+
+.stat{
+font-size:20px;
+margin:10px 0;
+}
+
+pre{
+background:#f1f1f1;
+padding:10px;
+border-radius:5px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>无服务器 FaaS 平台</h1>
+
+<div class="container">
+
+<div class="card">
+
+<h3>代码编辑器</h3>
+
+<textarea id="code">
+print("Hello FaaS Platform")
+</textarea>
+
+<button onclick="runCode()">运行代码</button>
+
+<h3>执行结果</h3>
+
+<pre id="result"></pre>
+
+</div>
+
+<div class="card">
+
+<h3>系统统计</h3>
+
+<div class="stat">总任务数: <span id="total">0</span></div>
+
+<div class="stat">运行中: <span id="running">0</span></div>
+
+<div class="stat">等待中: <span id="waiting">0</span></div>
+
+<div class="stat">已完成: <span id="finished">0</span></div>
+
+<button onclick="loadStats()">刷新统计</button>
+
+</div>
+
+<div class="card">
+
+<h3>任务列表</h3>
+
+<button onclick="loadTasks()">刷新任务</button>
+
+<pre id="tasks"></pre>
+
+</div>
+
+</div>
+
+<script>
+
+let lastTask=""
+
+async function runCode(){
+
+let code=document.getElementById("code").value
+
+let res=await fetch("http://127.0.0.1:8000/run",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+user_id:"user1",
+code:code
+
+})
+
+})
+
+let data=await res.json()
+
+lastTask=data.task_id
+
+document.getElementById("result").innerText="任务已提交\n任务ID: "+lastTask
+
+setTimeout(getResult,2000)
+
+}
+
+async function getResult(){
+
+let res=await fetch("http://127.0.0.1:8000/result/"+lastTask)
+
+let data=await res.json()
+
+document.getElementById("result").innerText=JSON.stringify(data,null,2)
+
+}
+
+async function loadTasks(){
+
+let res=await fetch("http://127.0.0.1:8000/tasks")
+
+let data=await res.json()
+
+document.getElementById("tasks").innerText=JSON.stringify(data,null,2)
+
+}
+
+async function loadStats(){
+
+let res=await fetch("http://127.0.0.1:8000/tasks")
+
+let data=await res.json()
+
+let tasks=data.tasks
+
+let running=0
+let waiting=0
+let finished=0
+
+for(let t of tasks){
+
+if(t.status==="running") running++
+if(t.status==="waiting") waiting++
+if(t.status==="finished") finished++
+
+}
+
+document.getElementById("total").innerText=tasks.length
+document.getElementById("running").innerText=running
+document.getElementById("waiting").innerText=waiting
+document.getElementById("finished").innerText=finished
+
+}
+
+</script>
+
+</body>
+
+</html>
