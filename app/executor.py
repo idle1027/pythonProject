@@ -1,9 +1,10 @@
 import subprocess
 import uuid
 import os
+import json
 
 
-def execute_code(code, timeout=30):
+def execute_code(code, timeout=10):
 
     file_id = str(uuid.uuid4())
 
@@ -36,7 +37,45 @@ def execute_code(code, timeout=30):
             timeout=timeout
         )
 
-        return result.stdout if result.stdout else result.stderr
+        # 构建结构化的执行结果
+        execution_result = {
+            "status": "success",
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "return_code": result.returncode
+        }
+
+        return json.dumps(execution_result, ensure_ascii=False)
 
     except subprocess.TimeoutExpired:
-        return "Timeout"
+        # 超时处理
+        execution_result = {
+            "status": "timeout",
+            "error": f"Execution timeout after {timeout} seconds",
+            "timeout": timeout
+        }
+        return json.dumps(execution_result, ensure_ascii=False)
+
+    except FileNotFoundError:
+        # Docker未安装或未运行
+        execution_result = {
+            "status": "error",
+            "error": "Docker is not available. Please ensure Docker is installed and running."
+        }
+        return json.dumps(execution_result, ensure_ascii=False)
+
+    except Exception as e:
+        # 其他错误
+        execution_result = {
+            "status": "error",
+            "error": str(e)
+        }
+        return json.dumps(execution_result, ensure_ascii=False)
+
+    finally:
+        # 清理临时文件
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Error cleaning up temp file {file_path}: {e}")
