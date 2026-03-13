@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 
-<title>FaaS仪表盘</title>
+<title>FaaS 仪表板</title>
 
 <style>
 
@@ -30,6 +30,14 @@ background:white;
 padding:20px;
 border-radius:8px;
 box-shadow:0 2px 6px rgba(0,0,0,0.1);
+display:flex;
+flex-direction:column;
+height:auto;
+min-height:200px;
+}
+
+.card:last-child{
+grid-column:span 2;
 }
 
 textarea{
@@ -37,11 +45,13 @@ width:100%;
 height:200px;
 font-family:monospace;
 font-size:14px;
+box-sizing:border-box;
 }
 
 button{
 padding:10px 20px;
 margin-top:10px;
+margin-right:5px;
 background:#007bff;
 color:white;
 border:none;
@@ -62,6 +72,32 @@ pre{
 background:#f1f1f1;
 padding:10px;
 border-radius:5px;
+margin:10px 0 0 0;
+white-space:pre-wrap;
+word-wrap:break-word;
+}
+
+.task-container{
+flex:1;
+display:flex;
+flex-direction:column;
+min-height:0;
+}
+
+.task-list{
+flex:1;
+max-height:300px;
+overflow-y:auto;
+border:1px solid #ddd;
+border-radius:5px;
+margin-top:10px;
+background:#f9f9f9;
+}
+
+#tasks{
+margin:0;
+border:none;
+background:transparent;
 }
 
 </style>
@@ -70,13 +106,21 @@ border-radius:5px;
 
 <body>
 
-<h1>无服务器 FaaS 平台</h1>
+<h1>无服务器函数计算平台</h1>
 
 <div class="container">
 
 <div class="card">
 
 <h3>代码编辑器</h3>
+
+<div style="margin-bottom:10px;">
+<label for="user_id">用户ID: </label>
+<input type="text" id="user_id" value="user1" placeholder="请输入用户ID" style="padding:5px; width:150px;">
+
+<label for="timeout" style="margin-left:20px;">超时(秒): </label>
+<input type="number" id="timeout" value="10" min="1" max="300" style="padding:5px; width:80px;">
+</div>
 
 <textarea id="code">
 print("Hello FaaS Platform")
@@ -102,17 +146,33 @@ print("Hello FaaS Platform")
 
 <div class="stat">已完成: <span id="finished">0</span></div>
 
+<div class="stat">已取消: <span id="cancelled">0</span></div>
+
+<div class="stat">失败: <span id="failed">0</span></div>
+
+<div class="stat">平均耗时: <span id="avg_time">0.00s</span></div>
+
 <button onclick="loadStats()">刷新统计</button>
 
 </div>
 
 <div class="card">
 
-<h3>任务列表</h3>
+<div class="task-container">
 
-<button onclick="loadTasks()">刷新任务</button>
+<div style="display:flex; justify-content:space-between; align-items:center;">
+<h3 style="margin:0;">任务列表</h3>
+<div>
+<button onclick="clearFinishedTasks()" style="margin:0 5px 0 0;">清除已完成</button>
+<button onclick="loadTasks()" style="margin:0;">刷新任务</button>
+</div>
+</div>
 
+<div class="task-list">
 <pre id="tasks"></pre>
+</div>
+
+</div>
 
 </div>
 
@@ -124,7 +184,35 @@ let lastTask=""
 
 async function runCode(){
 
+console.log("runCode() 被调用");
+
+let userId=document.getElementById("user_id").value
 let code=document.getElementById("code").value
+let timeout=parseInt(document.getElementById("timeout").value)
+
+console.log("参数:", {userId, codeLength: code.length, timeout});
+
+if(!userId){
+
+alert("请输入用户ID")
+
+return
+
+}
+
+if(timeout<1 || timeout>300){
+
+alert("超时时间必须在1-300秒之间")
+
+return
+
+}
+
+document.getElementById("result").innerText="正在提交任务...";
+
+try {
+
+console.log("发送请求到 http://127.0.0.1:8000/run");
 
 let res=await fetch("http://127.0.0.1:8000/run",{
 
@@ -135,21 +223,47 @@ headers:{
 },
 
 body:JSON.stringify({
-
-user_id:"user1",
-code:code
-
+user_id:userId,
+code:code,
+priority:5,
+timeout:timeout
 })
 
-})
+});
 
-let data=await res.json()
+console.log("响应状态:", res.status, res.statusText);
 
-lastTask=data.task_id
+if(!res.ok){
 
-document.getElementById("result").innerText="任务已提交\n任务ID: "+lastTask
+throw new Error(`HTTP错误! 状态码: ${res.status}`);
 
-setTimeout(getResult,2000)
+}
+
+let data=await res.json();
+
+console.log("响应数据:", data);
+
+if(data.error){
+
+throw new Error(data.error);
+
+}
+
+lastTask=data.task_id;
+
+document.getElementById("result").innerText="任务已提交\n任务ID: "+lastTask;
+
+setTimeout(getResult,2000);
+
+}catch(error){
+
+console.error("错误:", error);
+
+document.getElementById("result").innerText="提交失败: "+error.message;
+
+alert("提交失败: "+error.message);
+
+}
 
 }
 
@@ -159,7 +273,20 @@ let res=await fetch("http://127.0.0.1:8000/result/"+lastTask)
 
 let data=await res.json()
 
-document.getElementById("result").innerText=JSON.stringify(data,null,2)
+let displayData=Object.assign({},data)
+
+// 格式化时间戳
+if(displayData.created_at) displayData.created_at=displayData.created_at.replace("T"," ").slice(0,19)
+if(displayData.started_at) displayData.started_at=displayData.started_at.replace("T"," ").slice(0,19)
+if(displayData.finished_at) displayData.finished_at=displayData.finished_at.replace("T"," ").slice(0,19)
+
+// 格式化执行时间
+if(displayData.execution_time!==null && displayData.execution_time!==undefined){
+displayData.execution_time=displayData.execution_time.toFixed(2)+"s"
+
+}
+
+document.getElementById("result").innerText=JSON.stringify(displayData,null,2)
 
 }
 
@@ -184,12 +311,29 @@ let tasks=data.tasks
 let running=0
 let waiting=0
 let finished=0
+let cancelled=0
+let failed=0
+let totalTime=0
+let completedCount=0
 
 for(let t of tasks){
 
 if(t.status==="running") running++
 if(t.status==="waiting") waiting++
-if(t.status==="finished") finished++
+if(t.status==="finished"){
+
+finished++
+
+if(t.execution_time){
+
+totalTime+=t.execution_time
+completedCount++
+
+}
+
+}
+if(t.status==="cancelled") cancelled++
+if(t.status==="failed") failed++
 
 }
 
@@ -197,6 +341,41 @@ document.getElementById("total").innerText=tasks.length
 document.getElementById("running").innerText=running
 document.getElementById("waiting").innerText=waiting
 document.getElementById("finished").innerText=finished
+document.getElementById("cancelled").innerText=cancelled
+document.getElementById("failed").innerText=failed
+
+// 显示平均执行时间
+let avgTime=completedCount>0 ? (totalTime/completedCount).toFixed(2) : "0.00"
+let avgElement=document.getElementById("avg_time")
+if(avgElement){
+
+avgElement.innerText=avgTime+"s"
+
+}
+
+}
+
+async function clearFinishedTasks(){
+
+if(!confirm("确定要清除所有已完成的任务吗？")){
+
+return
+
+}
+
+let res=await fetch("http://127.0.0.1:8000/clear-finished",{
+
+method:"DELETE"
+
+})
+
+let data=await res.json()
+
+alert(data.message+"\n已清除 "+data.deleted_count+" 个任务")
+
+loadTasks()
+
+loadStats()
 
 }
 
