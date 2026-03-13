@@ -16,15 +16,6 @@ MYSQL_USER = os.getenv("RAILWAY_MYSQL_USER") or os.getenv("MYSQL_USER", "root")
 MYSQL_PASSWORD = os.getenv("RAILWAY_MYSQL_PASSWORD") or os.getenv("MYSQL_PASSWORD", "")
 MYSQL_DATABASE = os.getenv("RAILWAY_MYSQL_DATABASE") or os.getenv("MYSQL_DATABASE", "faas_system")
 
-# 调试输出：打印实际使用的环境变量值
-print(f"Database Config:")
-print(f"  RAILWAY_MYSQL_HOST = {os.getenv('RAILWAY_MYSQL_HOST')}")
-print(f"  MYSQL_HOST = {os.getenv('MYSQL_HOST')}")
-print(f"  Using MYSQL_HOST = {MYSQL_HOST}")
-print(f"  MYSQL_PORT = {MYSQL_PORT}")
-print(f"  MYSQL_USER = {MYSQL_USER}")
-print(f"  MYSQL_DATABASE = {MYSQL_DATABASE}")
-
 DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
 engine = create_engine(
