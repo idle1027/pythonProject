@@ -9,11 +9,12 @@ env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
 
 # MySQL数据库配置
-MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
-MYSQL_USER = os.getenv("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "faas_system")
+# 优先使用 Railway 不自动覆盖的变量名
+MYSQL_HOST = os.getenv("RAILWAY_MYSQL_HOST") or os.getenv("MYSQL_HOST", "localhost")
+MYSQL_PORT = os.getenv("RAILWAY_MYSQL_PORT") or os.getenv("MYSQL_PORT", "3306")
+MYSQL_USER = os.getenv("RAILWAY_MYSQL_USER") or os.getenv("MYSQL_USER", "root")
+MYSQL_PASSWORD = os.getenv("RAILWAY_MYSQL_PASSWORD") or os.getenv("MYSQL_PASSWORD", "")
+MYSQL_DATABASE = os.getenv("RAILWAY_MYSQL_DATABASE") or os.getenv("MYSQL_DATABASE", "faas_system")
 
 DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
