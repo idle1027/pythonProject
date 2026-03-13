@@ -17,6 +17,16 @@ MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "faas_system")
 
 DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
+# 打印数据库配置用于调试
+print("=" * 50)
+print("DATABASE CONFIGURATION:")
+print(f"HOST: {MYSQL_HOST}")
+print(f"PORT: {MYSQL_PORT}")
+print(f"USER: {MYSQL_USER}")
+print(f"DATABASE: {MYSQL_DATABASE}")
+print(f"URL: mysql+pymysql://{MYSQL_USER}:***@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
+print("=" * 50)
+
 engine = create_engine(
     DATABASE_URL,
     pool_size=10,
