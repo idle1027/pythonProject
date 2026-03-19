@@ -2,10 +2,28 @@ import subprocess
 import uuid
 import os
 import json
+from typing import Dict, Any
+from config.config import DOCKER_IMAGE, DOCKER_CPU_LIMIT, DOCKER_MEMORY_LIMIT
 
 
-def execute_code(code, timeout=10):
-
+def execute_code(code: str, timeout: int = 10) -> str:
+    """
+    在隔离的 Docker 容器中执行用户代码
+    
+    Args:
+        code: 要执行的 Python 代码
+        timeout: 超时时间（秒）
+    
+    Returns:
+        JSON 格式的执行结果，包含状态、输出和错误信息
+    
+    安全特性:
+        - --network=none: 禁止网络访问
+        - --read-only: 只读文件系统
+        - --security-opt=no-new-privileges: 防止权限提升
+        - --cpus=1: 限制 CPU 使用
+        - --memory=256m: 限制内存使用
+    """
     file_id = str(uuid.uuid4())
 
     runtime_dir = "runtime"
@@ -24,11 +42,14 @@ def execute_code(code, timeout=10):
                 "docker",
                 "run",
                 "--rm",
-                "--cpus=1",
-                "--memory=256m",
+                "--network=none",
+                "--read-only",
+                "--security-opt=no-new-privileges",
+                "--cpus", DOCKER_CPU_LIMIT,
+                "--memory", DOCKER_MEMORY_LIMIT,
                 "-v",
                 f"{os.getcwd()}/runtime:/app",
-                "python:3.10-alpine",
+                DOCKER_IMAGE,
                 "python",
                 f"/app/{file_id}.py"
             ],
@@ -38,7 +59,7 @@ def execute_code(code, timeout=10):
         )
 
         # 构建结构化的执行结果
-        execution_result = {
+        execution_result: Dict[str, Any] = {
             "status": "success",
             "stdout": result.stdout,
             "stderr": result.stderr,
@@ -49,7 +70,7 @@ def execute_code(code, timeout=10):
 
     except subprocess.TimeoutExpired:
         # 超时处理
-        execution_result = {
+        execution_result: Dict[str, Any] = {
             "status": "timeout",
             "error": f"Execution timeout after {timeout} seconds",
             "timeout": timeout
@@ -58,7 +79,7 @@ def execute_code(code, timeout=10):
 
     except FileNotFoundError:
         # Docker未安装或未运行
-        execution_result = {
+        execution_result: Dict[str, Any] = {
             "status": "error",
             "error": "Docker is not available. Please ensure Docker is installed and running."
         }
@@ -66,7 +87,7 @@ def execute_code(code, timeout=10):
 
     except Exception as e:
         # 其他错误
-        execution_result = {
+        execution_result: Dict[str, Any] = {
             "status": "error",
             "error": str(e)
         }

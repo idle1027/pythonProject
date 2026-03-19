@@ -7,19 +7,65 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.egg
+
+# 虚拟环境
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
 
 # 环境变量
 .env
+.env.local
+.env.*.local
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
+.project
+.pydevproject
+.settings/
 
 # 数据库
 *.db
 *.sqlite
+*.sqlite3
 
 # 运行时
 runtime/
+runtime/*
+
+# 日志
+*.log
+test_output.txt
+test_error.txt
+logs/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.bak
+
+# Docker
+docker-compose.override.yml
+
+# 云部署
+fly.toml
+render.yaml
+
+# 测试
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# 临时文件
+tmp/
+temp/
+*.tmp

@@ -18,13 +18,14 @@ MYSQL_DATABASE = os.getenv("MYSQL_DATABASE") or os.getenv("MYSQLDATABASE", "faas
 
 DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
-# 打印数据库配置用于调试
+# 打印数据库配置用于调试（密码已脱敏）
 print("=" * 50)
 print("DATABASE CONFIGURATION:")
 print(f"HOST: {MYSQL_HOST}")
 print(f"PORT: {MYSQL_PORT}")
 print(f"USER: {MYSQL_USER}")
 print(f"DATABASE: {MYSQL_DATABASE}")
+# 不打印完整URL，仅打印脱敏信息
 print(f"URL: mysql+pymysql://{MYSQL_USER}:***@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
 print("=" * 50)
 

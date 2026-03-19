@@ -4,8 +4,12 @@ from config.config import (TASK_QUEUE, USER_RUNNING_TASKS, MAX_USER_CONCURRENT,
                           WORKER_STATUS, USER_RUNNING_TASKS_LOCK, WORKER_STATUS_LOCK)
 
 
-def scheduler():
-
+def scheduler() -> None:
+    """
+    调度器函数，定期检查系统状态并输出监控信息
+    
+    每5秒检查一次任务队列、Worker状态和用户并发情况
+    """
     print("Scheduler started")
 
     while True:

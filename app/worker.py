@@ -11,8 +11,13 @@ from database.db import SessionLocal
 from database.models import Task
 
 
-def worker(worker_id):
-
+def worker(worker_id: int) -> None:
+    """
+    Worker 线程函数，从任务队列中获取并执行任务
+    
+    Args:
+        worker_id: Worker 的唯一标识符
+    """
     print(f"Worker {worker_id} started")
 
     with WORKER_STATUS_LOCK:

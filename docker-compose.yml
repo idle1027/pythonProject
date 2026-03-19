@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # FaaS 应用
+  faas-app:
+    build: .
+    container_name: faas-app
+    ports:
+      - "8000:8000"
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=rootpassword
+      - MYSQL_DATABASE=faas_system
+      - WORKER_COUNT=3
+      - MAX_USER_CONCURRENT=5
+      - DOCKER_IMAGE=python:3.10-alpine
+      - DOCKER_CPU_LIMIT=1
+      - DOCKER_MEMORY_LIMIT=256m
+      - MAX_CODE_SIZE=10240
+      - DEFAULT_TIMEOUT=10
+      - MAX_TIMEOUT=300
+      - CORS_ORIGINS=*
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./runtime:/app/runtime
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    networks:
+      - faas-network
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: faas-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=faas_system
+      - MYSQL_USER=faas_user
+      - MYSQL_PASSWORD=faas_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - faas-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis（可选，用于缓存）
+  redis:
+    image: redis:7-alpine
+    container_name: faas-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - faas-network
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  faas-network:
+    driver: bridge
